@@ -100,6 +100,8 @@ class GmailServiceAccountExtractor:
                 date_received TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 body_text TEXT,
                 body_html TEXT,
+                normalized_body_text TEXT,
+                normalized_body_html TEXT,
                 snippet TEXT,
                 labels TEXT[],
                 has_attachments BOOLEAN DEFAULT FALSE,

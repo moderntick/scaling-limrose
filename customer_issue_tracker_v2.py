@@ -446,6 +446,7 @@ Return JSON only:
                     issue_embedding, resolution_embedding,
                     similarity_score, based_on_issues, confidence_level
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
             """, (
                 email_id,
                 thread_id,
@@ -462,12 +463,15 @@ Return JSON only:
                 confidence_level
             ))
             
+            # Get the new issue ID
+            result = self.cursor.fetchone()
+            new_issue_id = result[0] if result else None
+            
             self.db_conn.commit()
             logger.info(f"✅ Saved customer issue for email {email_id} (confidence: {confidence_level})")
             
             # Cache similar issues for faster lookups
-            if suggested_resolution and based_on_issues:
-                new_issue_id = self.cursor.lastrowid
+            if suggested_resolution and based_on_issues and new_issue_id:
                 for similar_id in based_on_issues[:3]:  # Cache top 3
                     try:
                         self.cursor.execute("""
