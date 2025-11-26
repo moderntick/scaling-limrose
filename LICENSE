@@ -1,0 +1,95 @@
+# Applequist Open Source License (AOSL)
+Version 1.0, November 2024
+
+Copyright (c) 2024 Alec Meeker and Applequist Inc.
+All rights reserved.
+
+## License Grant
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+## Attribution Requirements
+
+### 1. General Attribution
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+### 2. Commercial Use Attribution
+For any COMMERCIAL USE of this Software, the following attribution requirements
+MUST be met:
+
+a) **Visible Attribution**: Every user-facing page, interface, or output that
+   utilizes this Software must display the following attribution in a clearly
+   visible manner:
+   
+   "Powered by Email Pipeline by Alec Meeker and Applequist Inc."
+   
+   OR at minimum:
+   
+   "Powered by Applequist Inc."
+
+b) **Attribution Specifications**:
+   - The attribution must be legible and prominently displayed
+   - For web applications: displayed on every page footer or header
+   - For desktop applications: displayed in the main interface
+   - For API services: included in API responses headers or documentation
+   - For mobile applications: displayed on main screens and about sections
+   - The attribution text must link to https://applequist.com when technically feasible
+
+c) **Attribution Styling**:
+   - Font size must be at least 10px or 0.625rem
+   - Contrast ratio must meet WCAG 2.1 AA standards
+   - Must not be hidden, obscured, or made less prominent through styling
+
+### 3. Non-Commercial Use
+For NON-COMMERCIAL USE (personal, educational, research, or non-profit use),
+the general attribution requirement (Section 1) applies, but the visible
+attribution requirement (Section 2) is optional though appreciated.
+
+### 4. Source Code Distribution
+Any distribution of source code must retain all copyright notices, this license
+file, and attribution requirements intact.
+
+## Commercial Use Definition
+
+"Commercial Use" means any use of the Software that:
+- Generates revenue directly or indirectly
+- Is used within a for-profit organization
+- Provides services to paying customers
+- Is incorporated into commercial products or services
+
+## Warranty Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## Additional Terms
+
+1. **No Warranty**: This Software is provided without any warranty. Use at your own risk.
+
+2. **Contributions**: Any contributions to this Software are accepted under the same
+   license terms unless explicitly stated otherwise.
+
+3. **Termination**: This license automatically terminates if you fail to comply with
+   its terms and conditions.
+
+4. **Severability**: If any provision of this license is held to be unenforceable,
+   the remaining provisions shall continue in full force and effect.
+
+## Contact
+
+For questions about this license or commercial licensing options, contact:
+- Alec Meeker
+- Applequist Inc.
+- Email: alec [at] bushwickdaily [dot] corn
+- Website: https://applequist.com

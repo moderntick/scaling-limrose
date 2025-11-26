@@ -1,0 +1,143 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Secrets and credentials
+config/service-account-key.json
+service-account-key.json
+*.key
+*.pem
+*.p12
+credentials.json
+token.json
+client_secret*.json
+
+# API Keys and pricing
+model_pricing.json
+gemini_costs_tracking.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+.pgpass
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# ML Models Cache
+~/.cache/
+.cache/
+models/
+*.bin
+*.pt
+*.pth
+*.onnx
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+tmp/
+temp/
+
+# OS generated
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Documentation build
+docs/_build/
+site/
+
+# Package files
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# Output files
+output/
+results/
+exports/
+
+# Project specific
+email_chunks/
+embeddings/
+classified_emails/
+entity_extraction/
+run_agent_processing.py
+extract_email_participants.py
+entity_inheritance_final_fix.py
+
+# Monitoring and tracking
+monitoring/
+tracking/
+analytics/
