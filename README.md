@@ -66,40 +66,13 @@ This will:
 - Download ML models
 - Create configuration files
 
-## Installation
+## Installation Options
 
-1. **Clone the repository**:
-```bash
-git clone https://github.com/moderntick/scaling-limrose.git
-cd scaling-limrose
-```
+### Option 1: Quick Install (If you have Python & PostgreSQL)
+If you already have Python 3.8+ and PostgreSQL installed, skip to [Quick Start](#quick-start).
 
-2. **Create virtual environment**:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-3. **Install dependencies**:
-```bash
-pip install -r requirements.txt
-```
-
-4. **Set up PostgreSQL**:
-```bash
-createdb nyc_news
-psql -d nyc_news -c "CREATE EXTENSION IF NOT EXISTS vector;"
-```
-
-5. **Configure environment**:
-```bash
-cp .env.example .env
-# Edit .env with your configuration:
-# - SERVICE_ACCOUNT_FILE: Path to your Gmail service account JSON
-# - DELEGATE_EMAIL: Email address to access
-# - LLM_API_KEY: Your Gemini API key
-# - DB_USER: PostgreSQL username
-```
+### Option 2: Complete Fresh Install (Recommended for new systems)
+If you're starting with a fresh macOS system, follow the [Complete macOS Setup Guide](#complete-macos-setup-guide-from-fresh-system) below.
 
 ## Configuration
 
@@ -220,22 +193,132 @@ git config --global user.name "Your Name"
 git config --global user.email "your.email@example.com"
 ```
 
-**Ubuntu/Debian:**
+### Step 6: Clone and Set Up the Email Pipeline Project
+
 ```bash
-# Add PostgreSQL APT repository
-sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt-get update
+# Clone the repository
+git clone https://github.com/moderntick/scaling-limrose.git
+cd scaling-limrose
 
-# Install PostgreSQL 17 with pgvector
-sudo apt-get install postgresql-17 postgresql-17-pgvector
+# Create Python virtual environment
+python3 -m venv venv
 
-# Install Redis (optional)
-sudo apt-get install redis-server
+# Activate virtual environment
+source venv/bin/activate
 
-# Start services
-sudo systemctl start postgresql
-sudo systemctl start redis
+# Upgrade pip
+pip install --upgrade pip
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+### Step 7: Create the Database
+
+```bash
+# Create the email_pipeline database
+createdb -U postgres email_pipeline
+
+# Verify the database was created
+psql -U postgres -l | grep email_pipeline
+
+# Enable pgvector extension
+psql -U postgres -d email_pipeline -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+### Step 8: Set Up Environment Variables
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit the .env file with your settings
+nano .env  # or use your preferred editor
+```
+
+Required settings in `.env`:
+```env
+# Database (usually these defaults work)
+DB_NAME=email_pipeline
+DB_USER=postgres
+DB_HOST=localhost
+
+# Gmail Service Account (you'll need to create this)
+SERVICE_ACCOUNT_FILE=config/service-account-key.json
+DELEGATE_EMAIL=your-email@yourdomain.com
+
+# Gemini API Key (get from https://makersuite.google.com/app/apikey)
+LLM_API_KEY=your-gemini-api-key-here
+LLM_PROVIDER=GEMINI
+```
+
+### Step 9: Run the Automated Setup
+
+```bash
+# This will verify everything is installed correctly
+./update_emails_v2.sh --setup
+```
+
+## Troubleshooting Fresh macOS Install
+
+### If PostgreSQL won't start:
+```bash
+# Check if another PostgreSQL is running
+brew services list
+
+# Stop all PostgreSQL services
+brew services stop postgresql
+brew services stop postgresql@17
+
+# Remove old PostgreSQL data if exists
+rm -rf /opt/homebrew/var/postgres
+
+# Reinitialize
+initdb --locale=C -E UTF-8 /opt/homebrew/var/postgresql@17
+
+# Start again
+brew services restart postgresql@17
+```
+
+### If Python commands fail:
+```bash
+# Make sure you're using the right Python
+which python3
+# Should show: /opt/homebrew/bin/python3
+
+# If not, fix your PATH
+echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### If pip install fails with SSL errors:
+```bash
+# Upgrade certificates
+brew install ca-certificates
+pip install --upgrade certifi
+```
+
+### Common Permission Issues:
+```bash
+# If you get permission errors with PostgreSQL
+sudo chown -R $(whoami) /opt/homebrew/var/postgresql@17
+```
+
+## Quick Start After Installation
+
+Once everything is installed:
+
+```bash
+# 1. Activate Python environment
+cd scaling-limrose
+source venv/bin/activate
+
+# 2. Run the pipeline
+./update_emails_v2.sh
+
+# 3. View customer issues dashboard (optional)
+python customer_issue_dashboard.py
+# Then open http://localhost:5000 in your browser
 ```
 
 ### Step 2: Create Google Cloud Service Account
