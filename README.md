@@ -134,24 +134,90 @@ TRANSFORMERS_OFFLINE=0
 4. Download the service account key JSON
 5. Place it in `config/` directory (excluded from git)
 
-## Detailed Setup Guide
+## Complete macOS Setup Guide (From Fresh System)
 
-### Step 1: Install System Dependencies
+### Prerequisites for Fresh macOS
 
-**macOS:**
+This guide assumes you have a fresh macOS system with no development tools installed.
+
+### Step 1: Install Xcode Command Line Tools
+
+Open Terminal and run:
 ```bash
-# Install Homebrew if needed
+xcode-select --install
+```
+Click "Install" when prompted. This installs essential development tools.
+
+### Step 2: Install Homebrew
+
+Homebrew is the package manager for macOS:
+```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-# Install PostgreSQL with pgvector
-brew install postgresql@17 pgvector
+After installation, add Homebrew to your PATH:
+```bash
+# For Apple Silicon Macs (M1/M2/M3)
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
 
-# Install Redis (optional)
-brew install redis
+# For Intel Macs
+echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/usr/local/bin/brew shellenv)"
+```
 
-# Start services
+### Step 3: Install Python 3
+
+```bash
+# Install Python 3.11 (recommended)
+brew install python@3.11
+
+# Verify installation
+python3 --version
+# Should show: Python 3.11.x
+
+# Install pip if not included
+python3 -m ensurepip --upgrade
+```
+
+### Step 4: Install PostgreSQL with pgvector
+
+```bash
+# Install PostgreSQL 17
+brew install postgresql@17
+
+# Install pgvector extension
+brew install pgvector
+
+# Add PostgreSQL to PATH
+echo 'export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Initialize the database
+initdb --locale=C -E UTF-8 /opt/homebrew/var/postgresql@17
+
+# Start PostgreSQL service
 brew services start postgresql@17
-brew services start redis
+
+# Wait a moment for the service to start
+sleep 3
+
+# Create a database user (optional, but recommended)
+createuser -s postgres
+
+# Verify PostgreSQL is running
+psql postgres -c "SELECT version();"
+```
+
+### Step 5: Install Git (if needed)
+
+```bash
+# Git is usually included with Xcode tools, but if not:
+brew install git
+
+# Configure git (replace with your info)
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
 ```
 
 **Ubuntu/Debian:**
