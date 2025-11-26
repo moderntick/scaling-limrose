@@ -9,8 +9,8 @@ This pipeline processes emails through several stages:
 2. **Deduplication**: Advanced fingerprinting to identify duplicate emails
 3. **Chunking & Embeddings**: Creates searchable chunks with vector embeddings
 4. **Classification**: Uses LLM to classify emails into business pipelines
-5. **Enhanced Embeddings**: Creates context-aware embeddings with thread and sender history
-6. **Entity Extraction**: Extracts people, organizations, and locations using SpaCy NER
+5. **Customer Issue Tracking**: Analyzes customer complaints, tracks resolutions, and generates fix documentation
+6. **Enhanced Embeddings**: Creates context-aware embeddings with thread and sender history
 
 ## Architecture
 
@@ -19,6 +19,8 @@ This pipeline processes emails through several stages:
 - **`gmail_service_account_extractor_with_dedup.py`**: Gmail extraction with complete deduplication
 - **`batch_process_all_emails.py`**: Creates email chunks and embeddings for RAG
 - **`batch_llm_classifier_optimized.py`**: LLM-based email classification (Gemini)
+- **`customer_issue_tracker.py`**: Analyzes customer issues and tracks resolutions
+- **`customer_issue_dashboard.py`**: Web dashboard for viewing customer issues
 - **`enhanced_email_embeddings.py`**: Context-aware embeddings with full thread context
 - **`email_deduplication_complete.py`**: Advanced email fingerprinting system
 - **`email_pipeline_router.py`**: Multi-classification routing system

@@ -6,12 +6,15 @@
 # 1. Extracts new emails from Gmail using service account with deduplication
 # 2. Creates chunks and embeddings for vector search (RAG)
 # 3. Classifies emails using LLM (Gemini) and creates enhanced embeddings
+# 4. Analyzes customer issues, tracks resolutions, and generates fix documentation
 #
 # The pipeline includes:
 # - Email extraction with content deduplication 
 # - Smart chunking with vector embeddings (all-MiniLM-L6-v2)
 # - Multi-label classification into business pipelines
 # - Enhanced embeddings with sender history and thread context
+# - Customer issue tracking with resolution analysis
+# - Automatic fix documentation generation
 # - Vector search capability with pgvector
 #
 # Usage:
@@ -274,6 +277,47 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Step 4: Process customer issues (if any were classified)
+echo -e "\n${YELLOW}Step 4: Analyzing customer issues...${NC}"
+echo "Checking for emails classified as customer issues..."
+
+# Check if there are any customer issue emails
+CUSTOMER_ISSUES=$(python -c "
+import psycopg2
+import os
+conn = psycopg2.connect(
+    dbname=os.getenv('DB_NAME', 'email_pipeline'),
+    user=os.getenv('DB_USER', 'postgres'),
+    host=os.getenv('DB_HOST', 'localhost')
+)
+cur = conn.cursor()
+cur.execute('''
+    SELECT COUNT(DISTINCT ce.id)
+    FROM classified_emails ce
+    JOIN email_pipeline_routes epr ON ce.id = epr.email_id
+    WHERE epr.pipeline_type IN ('customer_issue', 'customer_complaint', 'customer_service_or_feedback')
+''')
+count = cur.fetchone()[0]
+print(count)
+conn.close()
+" 2>/dev/null || echo "0")
+
+if [ "$CUSTOMER_ISSUES" -gt 0 ]; then
+    echo "Found $CUSTOMER_ISSUES customer issue emails to analyze"
+    echo "Using semantic vector search for intelligent issue resolution..."
+    python customer_issue_tracker_v2.py --batch-size 50
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Customer issue analysis complete (with vector similarity)${NC}"
+        # Show quick stats
+        python customer_issue_tracker_v2.py --stats | head -20
+    else
+        echo -e "${YELLOW}Warning: Customer issue tracking encountered errors${NC}"
+    fi
+else
+    echo "No customer issue emails found in this batch"
+fi
+
 # Success
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}Email pipeline completed successfully!${NC}"
@@ -332,6 +376,21 @@ try:
     # Sender stats
     cur.execute('SELECT COUNT(DISTINCT sender_email) FROM sender_interaction_history')
     unique_senders = cur.fetchone()[0]
+    
+    # Customer issue stats
+    cur.execute('''
+        SELECT 
+            COUNT(*) as total_issues,
+            SUM(CASE WHEN has_resolution THEN 1 ELSE 0 END) as resolved
+        FROM customer_issues_v2
+    ''')
+    issue_stats = cur.fetchone()
+    if issue_stats:
+        total_issues = issue_stats[0] or 0
+        resolved_issues = issue_stats[1] or 0
+    else:
+        total_issues = 0
+        resolved_issues = 0
 
     # Display statistics
     print(f'Total emails processed: {total_emails:,}')
@@ -369,6 +428,25 @@ try:
             for email, count in top_senders:
                 print(f'    {email}: {count} emails')
     
+    if total_issues > 0:
+        print(f'\\nCustomer Issues:')
+        print(f'  Total issues tracked: {total_issues:,}')
+        print(f'  Issues resolved: {resolved_issues:,} ({resolved_issues/total_issues*100:.1f}%)')
+        
+        # Top issue types
+        cur.execute('''
+            SELECT issue_type, COUNT(*) as count
+            FROM customer_issues_v2
+            GROUP BY issue_type
+            ORDER BY count DESC
+            LIMIT 3
+        ''')
+        top_issues = cur.fetchall()
+        if top_issues:
+            print(f'  Top issue types:')
+            for issue_type, count in top_issues:
+                print(f'    {issue_type}: {count}')
+    
     conn.close()
     
 except psycopg2.OperationalError as e:
@@ -390,3 +468,6 @@ echo -e "  ✓ Vector embeddings for semantic search"
 echo -e "  ✓ Multi-label classification"
 echo -e "  ✓ Enhanced context embeddings"
 echo -e "  ✓ Sender relationship tracking"
+echo -e "  ✓ Customer issue tracking with semantic similarity"
+echo -e "  ✓ Intelligent resolution suggestions"
+echo -e "  ✓ Automatic fix synthesis from similar issues"

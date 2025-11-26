@@ -37,7 +37,7 @@ CLASSIFICATION_LABELS = [
     "legal_or_corporate", "sales_or_advertising_inquiry", "human_resources",
     "financial_admin", "community_event_listing", "customer_service_or_feedback",
     "public_or_legal_notice", "internal_communication", "general_inquiry",
-    "marketing_or_newsletter"
+    "marketing_or_newsletter", "customer_issue", "customer_complaint"
 ]
 
 class OptimizedLLMBatchClassifier:
