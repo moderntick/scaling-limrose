@@ -1,23 +1,18 @@
 #!/bin/bash
 #
-# Email Update Pipeline V2 - With Classification & Entity Intelligence
+# Email Update Pipeline V2
 # 
-# This script runs the complete email update pipeline:
-# 1. Extracts new emails from Gmail using service account
-# 2. Creates chunks and basic embeddings for RAG search
-# 3. Classifies emails using LLM (Gemini Flash) and creates enhanced embeddings
-# 4. Extracts entities using SpaCy NER with duplicate prevention
-# 5. Extracts email participants for intelligence system
+# This script runs the email processing pipeline:
+# 1. Extracts new emails from Gmail using service account with deduplication
+# 2. Creates chunks and embeddings for vector search (RAG)
+# 3. Classifies emails using LLM (Gemini) and creates enhanced embeddings
 #
 # The pipeline includes:
-# - Email deduplication and fingerprinting
-# - Chunk creation with embeddings (all-MiniLM-L6-v2)
-# - Email classification into pipelines (journalism, newsletter, sales, etc.)
-# - Enhanced embeddings with classification context
-# - Entity extraction with database constraints and duplicate prevention
-# - Entity disambiguation and alias management
-# - Real-time entity system health monitoring
-# - RAG system integration
+# - Email extraction with content deduplication 
+# - Smart chunking with vector embeddings (all-MiniLM-L6-v2)
+# - Multi-label classification into business pipelines
+# - Enhanced embeddings with sender history and thread context
+# - Vector search capability with pgvector
 #
 # Usage:
 #   ./update_emails_v2.sh                           # Extract all new emails
@@ -217,19 +212,8 @@ check_environment() {
     echo -e "${GREEN}Configuration OK${NC}"
 }
 
-# Ensure services are running for entity pipeline
+# Ensure services are running
 check_services() {
-    # Check Redis
-    if ! redis-cli ping > /dev/null 2>&1; then
-        echo -e "${YELLOW}Warning: Redis is not running. Starting Redis...${NC}"
-        if command -v brew &> /dev/null; then
-            brew services start redis
-        else
-            sudo systemctl start redis
-        fi
-        sleep 2
-    fi
-    
     # Check PostgreSQL
     PSQL=$(which psql 2>/dev/null || echo "/usr/local/Cellar/postgresql@17/17.5/bin/psql")
     DB_NAME=${DB_NAME:-email_pipeline}
@@ -239,6 +223,7 @@ check_services() {
         echo "Run './update_emails_v2.sh --setup' if you haven't set up the database"
         exit 1
     fi
+    echo -e "${GREEN}PostgreSQL connection verified${NC}"
 }
 
 # Check environment before starting
@@ -249,7 +234,6 @@ check_services
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Email Update Pipeline V2${NC}"
-echo -e "${GREEN}With Classification & Entity Intelligence${NC}"
 echo -e "${GREEN}========================================${NC}"
 
 # Step 1: Extract new emails from Gmail
@@ -278,7 +262,7 @@ fi
 # Step 3: Classify emails using LLM
 echo -e "\n${YELLOW}Step 3: Classifying emails into pipelines...${NC}"
 echo "Using Gemini Flash to classify emails..."
-echo "Classifications: journalism, newsletter, sales, story leads, etc."
+echo "Classifications include: editorial, sales, press releases, newsletters, etc."
 echo "This also creates enhanced embeddings with classification context"
 
 # Run classifier to process ALL unclassified emails in batches
@@ -290,151 +274,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 4: Run the BULLETPROOF entity extraction and disambiguation system
-echo -e "\n${YELLOW}Step 4: Running BULLETPROOF entity extraction system...${NC}"
-echo "This will:"
-echo "  - Extract entities using SpaCy NER with duplicate prevention"
-echo "  - Use database constraints to prevent duplicate entity mentions"
-echo "  - Process with idempotent operations and parameter versioning"
-echo "  - Build entity aliases and identify collisions"
-echo "  - Setup disambiguation system with robust state tracking"
-
-# Note: The new entity system doesn't use Celery, but keep workers running for other tasks
-# ensure_celery_workers is still available if needed for article processing
-
-# Set environment for offline mode
-export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
-
-# Run the FIXED incremental entity system - bulletproof duplicate prevention
-# This uses the Phase 4.2 robust incremental extractor with constraint protection
-echo -e "${GREEN}Running BULLETPROOF entity extraction with duplicate prevention...${NC}"
-echo "Features: Idempotent processing, constraint protection, parameter versioning"
-python entity_extraction/build_entity_system_incremental_fixed.py --emails-only
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Entity extraction and disambiguation failed!${NC}"
-    exit 1
-fi
-
-# Step 4b: Entity inheritance for duplicate chunks
-echo -e "\n${YELLOW}Step 4b: Running entity inheritance for duplicate chunks...${NC}"
-echo "This ensures all duplicate chunks inherit entities from their originals"
-echo "Provides complete entity location tracking across all email content"
-
-python entity_inheritance_final_fix.py
-
-if [ $? -ne 0 ]; then
-    echo -e "${YELLOW}Warning: Entity inheritance had issues${NC}"
-    echo "Note: This is supplemental - core entity extraction completed successfully"
-    echo "Manual inheritance can be run later: python entity_inheritance_final_fix.py"
-    # Don't exit - inheritance issues shouldn't stop the pipeline
-fi
-
-# Step 5: Extract people entities from email senders (if this is still needed)
-echo -e "\n${YELLOW}Step 5: Extracting people entities from email senders...${NC}"
-echo "This will extract and disambiguate people mentioned in email sender fields"
-
-# Check if this script exists and is still needed
-if [ -f "entity_extraction/extract_email_people_entities.py" ]; then
-    python entity_extraction/extract_email_people_entities.py
-    
-    if [ $? -ne 0 ]; then
-        echo -e "${YELLOW}Warning: Email people entity extraction had issues${NC}"
-        # Don't exit - this might be supplemental
-    fi
-else
-    echo -e "${YELLOW}Skipping email people extraction (script not found)${NC}"
-fi
-
-# Step 6: Extract email participants for intelligence system
-echo -e "\n${YELLOW}Step 6: Extracting email participants for intelligence system...${NC}"
-echo "This will:"
-echo "  - Extract participants (sender, recipients, CC, BCC) from new emails"
-echo "  - Generate participant fingerprints for cross-email linking"
-echo "  - Link participants to sender_profiles for enhanced intelligence"
-echo "  - Enable Complete Participant Intelligence API functionality"
-
-# Run incremental participant extraction for new emails
-python extract_email_participants.py --incremental
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Email participant extraction failed!${NC}"
-    echo "Note: This may impact participant intelligence features"
-    echo "Manual fix: python extract_email_participants.py --incremental"
-    exit 1
-fi
-
-# Validate extraction results
-echo -e "${GREEN}Validating participant extraction...${NC}"
-python -c "
-import psycopg2
-import os
-conn = psycopg2.connect(
-    dbname=os.getenv('DB_NAME', 'email_pipeline'), 
-    user=os.getenv('DB_USER', 'postgres'), 
-    host=os.getenv('DB_HOST', 'localhost')
-)
-cursor = conn.cursor()
-
-# Check for emails missing participants
-cursor.execute('''
-    SELECT COUNT(*) FROM classified_emails ce
-    LEFT JOIN email_participants ep ON ce.id = ep.email_id
-    WHERE ep.email_id IS NULL
-''')
-missing = cursor.fetchone()[0]
-
-if missing > 10:
-    print(f'❌ WARNING: {missing} emails missing participants')
-    exit(1)
-else:
-    print(f'✅ Participant extraction healthy: {missing} emails missing participants')
-
-conn.close()
-"
-
-if [ $? -ne 0 ]; then
-    echo -e "${YELLOW}Warning: Participant extraction validation failed${NC}"
-    echo "System may need manual participant extraction review"
-    # Don't exit - allow pipeline to continue
-fi
-
-# Step 7: Process emails through LangChain Agent System
-echo -e "\n${YELLOW}Step 7: Running LangChain Agent System...${NC}"
-echo "This will:"
-echo "  - Analyze emails with AI agents (Triage, Journalist, Sales)"
-echo "  - Generate actionable insights and recommendations"
-echo "  - Create draft responses and follow-ups"
-echo "  - Flag urgent items for immediate attention"
-
-# Check if OPENAI_API_KEY is set
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo -e "${YELLOW}Warning: OPENAI_API_KEY not set. Agent processing will be skipped.${NC}"
-    echo "To enable agent processing, set your OpenAI API key:"
-    echo "  export OPENAI_API_KEY='your-api-key'"
-else
-    # Run agent processing
-    python run_agent_processing.py --batch-size 50
-    
-    if [ $? -ne 0 ]; then
-        echo -e "${YELLOW}Warning: Agent processing encountered issues${NC}"
-        echo "This is non-critical - emails have been processed successfully otherwise"
-        # Don't exit - agent processing is supplemental
-    else
-        # Show agent processing stats
-        echo -e "\n${BLUE}Agent Processing Summary:${NC}"
-        python run_agent_processing.py --stats
-    fi
-fi
-
 # Success
 echo -e "\n${GREEN}========================================${NC}"
-echo -e "${GREEN}Email update pipeline completed successfully!${NC}"
+echo -e "${GREEN}Email pipeline completed successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
 
-# Show comprehensive summary statistics
-echo -e "\n${YELLOW}Summary:${NC}"
+# Show summary statistics
+echo -e "\n${YELLOW}Pipeline Summary:${NC}"
 python -c "
 import sys
 import os
@@ -471,7 +317,7 @@ try:
     ''')
     classifications = cur.fetchall()
 
-    # Emails with embeddings
+    # Emails with chunks and embeddings
     cur.execute('SELECT COUNT(DISTINCT email_id) FROM email_chunks')
     emails_with_chunks = cur.fetchone()[0]
     
@@ -479,145 +325,49 @@ try:
     cur.execute('SELECT COUNT(DISTINCT email_id) FROM enhanced_email_embeddings')
     emails_with_enhanced = cur.fetchone()[0]
 
-    # Emails with entities - check from entity_mentions_v2
-    cur.execute('''
-        SELECT COUNT(DISTINCT em.chunk_id) 
-        FROM entity_mentions_v2 em
-        JOIN email_chunks ec ON em.chunk_id = ec.id
-    ''')
-    emails_with_entities = cur.fetchone()[0]
-
-    # Total entities found
-    cur.execute('''
-        SELECT COUNT(DISTINCT entity_hash) 
-        FROM entities_v2
-    ''')
-    unique_entities = cur.fetchone()[0]
-
-    # Recent entity mentions
-    cur.execute('''
-        SELECT COUNT(*) 
-        FROM entity_mentions_v2
-        WHERE extracted_at >= NOW() - INTERVAL '24 hours'
-    ''')
-    recent_mentions = cur.fetchone()[0]
-
-    # Participant intelligence statistics
-    cur.execute('''
-        SELECT 
-            COUNT(DISTINCT email_id) as emails_with_participants,
-            COUNT(*) as total_participant_records,
-            COUNT(DISTINCT participant_fingerprint) as unique_participants
-        FROM email_participants
-    ''')
-    participant_stats = cur.fetchone()
-
-    # Participant linkage quality
-    cur.execute('''
-        SELECT
-            COUNT(*) FILTER (WHERE sp.fingerprint IS NOT NULL) as linked_to_profiles,
-            COUNT(*) as total_participants,
-            ROUND(100.0 * COUNT(*) FILTER (WHERE sp.fingerprint IS NOT NULL) / COUNT(*), 1) as linkage_rate
-        FROM email_participants ep
-        LEFT JOIN sender_profiles sp ON ep.participant_fingerprint = sp.fingerprint
-    ''')
-    linkage_stats = cur.fetchone()
-
-    # Entity type breakdown (using new schema)
-    cur.execute('''
-        SELECT 
-            entity_type,
-            COUNT(DISTINCT entity_hash) as count
-        FROM entities_v2
-        GROUP BY entity_type
-        ORDER BY count DESC
-    ''')
-    entity_types = cur.fetchall()
+    # Duplicate groups
+    cur.execute('SELECT COUNT(*) FROM email_duplicate_groups WHERE member_count > 1')
+    duplicate_groups = cur.fetchone()[0]
     
-    # Collision statistics
-    cur.execute('''
-        SELECT 
-            COUNT(*) as total_entities,
-            COUNT(CASE WHEN has_collision = TRUE THEN 1 END) as collision_entities
-        FROM entities_v2
-    ''')
-    entity_stats = cur.fetchone()
-    
-    # Entity alias statistics
-    cur.execute('''
-        SELECT COUNT(*) FROM entity_aliases_v2
-    ''')
-    alias_count = cur.fetchone()[0]
+    # Sender stats
+    cur.execute('SELECT COUNT(DISTINCT sender_email) FROM sender_interaction_history')
+    unique_senders = cur.fetchone()[0]
 
     # Display statistics
-    print(f'Total emails: {total_emails:,}')
-    print(f'New emails (24h): {recent_emails:,}')
+    print(f'Total emails processed: {total_emails:,}')
+    print(f'New emails (last 24h): {recent_emails:,}')
+    print(f'Duplicate email groups: {duplicate_groups:,}')
     
     if total_emails > 0:
-        print(f'Emails with embeddings: {emails_with_chunks:,} ({emails_with_chunks/total_emails*100:.1f}%)')
-        print(f'Enhanced embeddings: {emails_with_enhanced:,} ({emails_with_enhanced/total_emails*100:.1f}%)')
-        print(f'Emails with entities: {emails_with_entities:,} ({emails_with_entities/total_emails*100:.1f}%)')
-    else:
-        print(f'Emails with embeddings: {emails_with_chunks:,}')
-        print(f'Enhanced embeddings: {emails_with_enhanced:,}')
-        print(f'Emails with entities: {emails_with_entities:,}')
+        print(f'\\nEmbedding Coverage:')
+        print(f'  Emails with chunks: {emails_with_chunks:,} ({emails_with_chunks/total_emails*100:.1f}%)')
+        print(f'  Enhanced embeddings: {emails_with_enhanced:,} ({emails_with_enhanced/total_emails*100:.1f}%)')
     
-    print(f'\\nEmail Classifications:')
+    print(f'\\nClassification Breakdown:')
     if classifications:
         for pipeline_type, count in classifications[:5]:
             print(f'  {pipeline_type}: {count:,}')
+        if len(classifications) > 5:
+            print(f'  ... and {len(classifications)-5} more categories')
     else:
         print('  No classifications yet')
     
-    print(f'\\nEntity Intelligence:')
-    print(f'  Unique entities found: {unique_entities:,}')
-    print(f'  Entity mentions (24h): {recent_mentions:,}')
-    print(f'  Entities with collisions: {entity_stats[1]:,}')
-    print(f'  Entity aliases: {alias_count:,}')
-
-    print(f'\\nParticipant Intelligence:')
-    print(f'  Emails with participants: {participant_stats[0]:,}')
-    print(f'  Total participant records: {participant_stats[1]:,}')
-    print(f'  Unique participants: {participant_stats[2]:,}')
-    print(f'  Profile linkage rate: {linkage_stats[2]}%')
-    
-    print(f'\\nEntity Types:')
-    if entity_types:
-        for entity_type, count in entity_types[:5]:
-            print(f'  {entity_type}: {count:,}')
-    else:
-        print('  No entity types found')
-    
-    # Agent processing statistics
-    cur.execute('''
-        SELECT 
-            COUNT(CASE WHEN agent_processing_status = 'completed' THEN 1 END) as processed,
-            COUNT(CASE WHEN agent_processing_status = 'pending' THEN 1 END) as pending,
-            COUNT(CASE WHEN agent_processing_status = 'error' THEN 1 END) as errors
-        FROM classified_emails
-        WHERE agent_processing_status IS NOT NULL
-    ''')
-    agent_stats = cur.fetchone()
-    
-    if agent_stats and (agent_stats[0] or agent_stats[1] or agent_stats[2]):
-        print(f'\\nAgent Processing:')
-        print(f'  Processed: {agent_stats[0]:,}')
-        print(f'  Pending: {agent_stats[1]:,}')
-        print(f'  Errors: {agent_stats[2]:,}')
+    if unique_senders > 0:
+        print(f'\\nSender Intelligence:')
+        print(f'  Unique senders tracked: {unique_senders:,}')
         
-        # Get action counts
+        # Top senders
         cur.execute('''
-            SELECT COUNT(*) FROM agent_actions
-            WHERE created_at >= NOW() - INTERVAL '24 hours'
+            SELECT sender_email, total_emails_sent 
+            FROM sender_interaction_history 
+            ORDER BY total_emails_sent DESC 
+            LIMIT 3
         ''')
-        recent_actions = cur.fetchone()[0]
-        if recent_actions:
-            print(f'  Actions created (24h): {recent_actions:,}')
-
-    # Entity system health check
-    cur.execute('SELECT check_entity_system_alerts()')
-    health_status = cur.fetchone()[0]
-    print(f'\\\\nEntity System Health: {health_status}')
+        top_senders = cur.fetchall()
+        if top_senders:
+            print(f'  Top senders:')
+            for email, count in top_senders:
+                print(f'    {email}: {count} emails')
     
     conn.close()
     
@@ -633,10 +383,10 @@ except Exception as e:
     sys.exit(1)
 "
 
-echo -e "\n${GREEN}The RAG system now has BULLETPROOF classification & entity intelligence!${NC}"
-echo -e "${BLUE}Entity System: BULLETPROOF SpaCy NER with duplicate prevention & health monitoring${NC}"
-echo -e "${GREEN}Features: Database constraints, idempotent processing, real-time monitoring${NC}"
-echo -e "${YELLOW}Note: For article entity extraction, run: python entity_extraction/build_entity_system_incremental_fixed.py --articles-only${NC}"
-
-# Note: Celery workers may still be needed for other tasks (article processing, etc.)
-# so we don't automatically clean them up here
+echo -e "\n${GREEN}Your email processing system is ready for use!${NC}"
+echo -e "${BLUE}Features:${NC}"
+echo -e "  ✓ Email extraction with deduplication"
+echo -e "  ✓ Vector embeddings for semantic search"
+echo -e "  ✓ Multi-label classification"
+echo -e "  ✓ Enhanced context embeddings"
+echo -e "  ✓ Sender relationship tracking"
