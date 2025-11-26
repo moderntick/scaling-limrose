@@ -127,27 +127,7 @@ if [[ "$1" == "--setup" ]]; then
     
     # Create initial tables
     echo -e "\n${YELLOW}Creating database tables...${NC}"
-    
-    # First, create the main classified_emails table and related tables
-    echo "Creating main email tables..."
-    python -c "
-import os
-import psycopg
-from gmail_service_account_extractor_with_dedup import setup_database
-
-# Database configuration
-DB_NAME = os.getenv('DB_NAME', 'email_pipeline')
-DB_USER = os.getenv('DB_USER', 'postgres')
-DB_HOST = os.getenv('DB_HOST', 'localhost')
-
-print('Setting up main email tables...')
-setup_database()
-print('Main tables created successfully!')
-"
-    
-    # Then create the email_chunks table which depends on classified_emails
-    echo "Creating email chunks table..."
-    python scripts/create_email_chunks_table.py
+    python scripts/setup_all_tables.py
     
     # Download models
     echo -e "\n${YELLOW}Downloading ML models (this may take a few minutes)...${NC}"
