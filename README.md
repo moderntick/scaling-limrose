@@ -51,8 +51,8 @@ The easiest way to set up the pipeline is using the automated setup script:
 
 ```bash
 # Clone and setup
-git clone <repository-url>
-cd email-pipeline-project
+git clone https://github.com/moderntick/scaling-limrose.git
+cd scaling-limrose
 ./update_emails_v2.sh --setup
 ```
 
@@ -68,8 +68,8 @@ This will:
 
 1. **Clone the repository**:
 ```bash
-git clone <repository-url>
-cd email-pipeline-project
+git clone https://github.com/moderntick/scaling-limrose.git
+cd scaling-limrose
 ```
 
 2. **Create virtual environment**:
