@@ -5,7 +5,7 @@ A comprehensive email processing pipeline that extracts emails from Gmail, perfo
 ## Overview
 
 This pipeline processes emails through several stages:
-1. **Email Extraction**: Fetches emails from Gmail using service account authentication
+1. **Email Extraction**: Fetches emails from Gmail using OAuth2 authentication
 2. **Deduplication**: Advanced fingerprinting to identify duplicate emails
 3. **Chunking & Embeddings**: Creates searchable chunks with vector embeddings
 4. **Classification**: Uses LLM to classify emails into business pipelines
@@ -16,7 +16,8 @@ This pipeline processes emails through several stages:
 
 ### Core Components
 
-- **`gmail_service_account_extractor_with_dedup.py`**: Gmail extraction with complete deduplication
+- **`gmail_oauth_extractor.py`**: Gmail extraction with OAuth2 authentication
+- **`gmail_service_account_extractor_with_dedup.py`**: Legacy Gmail extraction with service account
 - **`batch_process_all_emails.py`**: Creates email chunks and embeddings for RAG
 - **`batch_llm_classifier_optimized.py`**: LLM-based email classification (Gemini)
 - **`customer_issue_tracker.py`**: Analyzes customer issues and tracks resolutions
@@ -43,8 +44,8 @@ This pipeline processes emails through several stages:
 - **Disk**: 2GB for models + space for email data
 
 ### Service Requirements
-- Gmail account with admin access (for delegation)
-- Google Cloud project with Gmail API enabled
+- Gmail account
+- Google Cloud project with Gmail API enabled  
 - Gemini API key (free tier available)
 
 ## Quick Start
@@ -81,8 +82,8 @@ If you're starting with a fresh macOS system, follow the [Complete macOS Setup G
 Create a `.env` file with:
 ```env
 # Gmail Configuration
-SERVICE_ACCOUNT_FILE=/path/to/service-account-key.json
-DELEGATE_EMAIL=your-email@example.com
+# OAuth credentials are stored in ~/.email-pipeline/config/
+# Run 'python setup_oauth.py' to configure
 
 # Database Configuration
 DB_NAME=email_pipeline
@@ -99,13 +100,20 @@ HF_HUB_OFFLINE=0
 TRANSFORMERS_OFFLINE=0
 ```
 
-### Service Account Setup
+### Gmail OAuth Setup
 
-1. Create a Google Cloud project
-2. Enable Gmail API
-3. Create a service account with domain-wide delegation
-4. Download the service account key JSON
-5. Place it in `config/` directory (excluded from git)
+**For easy setup, run:**
+```bash
+python setup_oauth.py
+```
+
+This will guide you through:
+1. Creating a Google Cloud project  
+2. Enabling Gmail API
+3. Creating OAuth2 credentials
+4. Testing authentication
+
+**Detailed setup guide**: See [docs/OAUTH_SETUP.md](docs/OAUTH_SETUP.md)
 
 ## Complete macOS Setup Guide (From Fresh System)
 
@@ -243,9 +251,8 @@ DB_NAME=email_pipeline
 DB_USER=postgres
 DB_HOST=localhost
 
-# Gmail Service Account (you'll need to create this)
-SERVICE_ACCOUNT_FILE=config/service-account-key.json
-DELEGATE_EMAIL=your-email@yourdomain.com
+# Gmail OAuth (configure with: python setup_oauth.py)
+# OAuth credentials stored securely in ~/.email-pipeline/config/
 
 # Gemini API Key (get from https://makersuite.google.com/app/apikey)
 LLM_API_KEY=your-gemini-api-key-here
@@ -459,10 +466,13 @@ Options:
 ### Individual Components
 
 ```bash
-# Step 1: Extract emails
-python gmail_service_account_extractor_with_dedup.py
+# Step 0: Set up Gmail OAuth (first time only)
+python setup_oauth.py
 
-# Step 2: Create chunks and embeddings
+# Step 1: Extract emails with OAuth
+python gmail_oauth_extractor.py
+
+# Step 2: Create chunks and embeddings  
 python batch_process_all_emails.py
 
 # Step 3: Classify emails
@@ -470,6 +480,27 @@ python batch_llm_classifier_optimized.py --all --batch-size 50
 
 # Create database tables
 python scripts/create_email_chunks_table.py
+```
+
+### Gmail Extraction Options
+
+```bash
+# Extract unread emails (default)
+python gmail_oauth_extractor.py
+
+# Test mode - fetch 5 emails without saving
+python gmail_oauth_extractor.py --test
+
+# Revoke OAuth credentials
+python gmail_oauth_extractor.py --revoke
+```
+
+### Legacy Service Account Support
+
+For existing users with service accounts:
+```bash
+# Legacy extraction (requires service account setup)
+python gmail_service_account_extractor_with_dedup.py
 ```
 
 ## Database Schema

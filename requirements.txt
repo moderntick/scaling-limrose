@@ -1,16 +1,30 @@
+# Database
 psycopg2-binary
 psycopg[binary,pool]>=3.2.0
 pgvector
+
+# Machine Learning
 sentence-transformers==5.1.0
+numpy>=1.21.0
+
+# Google APIs and OAuth
 google-api-python-client==2.138.0
 google-auth>=2.0
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.1
 google-generativeai==0.3.0
+
+# OAuth and Security
+aiohttp>=3.8.0
+cryptography>=41.0.0
+python-dotenv>=1.0.0
+
+# Web and API
 requests==2.32.5
-python-dateutil==2.8.2
+flask>=2.0.0
 beautifulsoup4==4.12.2
 lxml[html_clean]>=4.0
+
+# Utilities
+python-dateutil==2.8.2
 tqdm>=4.0
-numpy>=1.21.0
-flask>=2.0.0

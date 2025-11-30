@@ -3,7 +3,7 @@
 # Email Update Pipeline V2
 # 
 # This script runs the email processing pipeline:
-# 1. Extracts new emails from Gmail using service account with deduplication
+# 1. Extracts new emails from Gmail using OAuth2 authentication with deduplication
 # 2. Creates chunks and embeddings for vector search (RAG)
 # 3. Classifies emails using LLM (Gemini) and creates enhanced embeddings
 # 4. Analyzes customer issues, tracks resolutions, and generates fix documentation
@@ -87,8 +87,7 @@ if [[ "$1" == "--setup" ]]; then
         echo -e "\n${YELLOW}Creating .env file from template...${NC}"
         cp .env.example .env
         echo -e "${GREEN}Created .env file. Please edit it with your configuration:${NC}"
-        echo "  - SERVICE_ACCOUNT_FILE: Path to your Gmail service account JSON"
-        echo "  - DELEGATE_EMAIL: Email address to access"
+        echo "  - Gmail authentication: Run 'python setup_oauth.py' to configure"
         echo "  - LLM_API_KEY: Your Gemini API key"
         echo "  - DB_NAME, DB_USER: Database configuration"
     fi
@@ -138,18 +137,19 @@ model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 print('Model downloaded successfully!')
 "
     
-    # Check service account file
-    echo -e "\n${YELLOW}Checking Gmail service account...${NC}"
-    if [ -z "$SERVICE_ACCOUNT_FILE" ] || [ ! -f "$SERVICE_ACCOUNT_FILE" ]; then
-        echo -e "${RED}Error: Service account file not found${NC}"
-        echo "Please:"
-        echo "1. Create a service account in Google Cloud Console"
-        echo "2. Enable Gmail API"
-        echo "3. Download the service account key JSON"
-        echo "4. Update SERVICE_ACCOUNT_FILE in .env"
-        exit 1
+    # Check OAuth configuration
+    echo -e "\n${YELLOW}Checking Gmail OAuth configuration...${NC}"
+    oauth_config="$HOME/.email-pipeline/config/oauth_config.json"
+    if [ ! -f "$oauth_config" ]; then
+        echo -e "${YELLOW}OAuth not configured yet. Running setup...${NC}"
+        echo "Please follow the OAuth setup wizard:"
+        python setup_oauth.py
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}OAuth setup failed${NC}"
+            exit 1
+        fi
     else
-        echo -e "${GREEN}Service account file found${NC}"
+        echo -e "${GREEN}OAuth configuration found${NC}"
     fi
     
     # Final instructions
@@ -157,9 +157,8 @@ print('Model downloaded successfully!')
     echo -e "${GREEN}Setup Complete!${NC}"
     echo -e "${GREEN}========================================${NC}\n"
     echo -e "${YELLOW}Next steps:${NC}"
-    echo "1. Edit .env file with your configuration"
-    echo "2. Ensure your service account has Gmail delegation permissions"
-    echo "3. Run the pipeline: ./update_emails_v2.sh"
+    echo "1. Edit .env file with your LLM and database configuration"
+    echo "2. Run the pipeline: ./update_emails_v2.sh"
     echo ""
     echo -e "${BLUE}For more help, see README.md${NC}"
     exit 0
@@ -188,21 +187,11 @@ check_environment() {
         exit 1
     fi
     
-    # Check required variables
-    if [ -z "$SERVICE_ACCOUNT_FILE" ]; then
-        echo -e "${RED}Error: SERVICE_ACCOUNT_FILE not set${NC}"
-        echo "Please set SERVICE_ACCOUNT_FILE in .env"
-        exit 1
-    fi
-    
-    if [ ! -f "$SERVICE_ACCOUNT_FILE" ]; then
-        echo -e "${RED}Error: Service account file not found at: $SERVICE_ACCOUNT_FILE${NC}"
-        exit 1
-    fi
-    
-    if [ -z "$DELEGATE_EMAIL" ]; then
-        echo -e "${RED}Error: DELEGATE_EMAIL not set${NC}"
-        echo "Please set DELEGATE_EMAIL in .env"
+    # Check OAuth configuration
+    oauth_config="$HOME/.email-pipeline/config/oauth_config.json"
+    if [ ! -f "$oauth_config" ]; then
+        echo -e "${RED}Error: Gmail OAuth not configured${NC}"
+        echo "Please run: python setup_oauth.py"
         exit 1
     fi
     
@@ -243,7 +232,7 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "\n${YELLOW}Step 1: Extracting new emails from Gmail...${NC}"
 # Debug: Check if environment variables are set
 echo "DEBUG: HF_HUB_OFFLINE=$HF_HUB_OFFLINE"
-python gmail_service_account_extractor_with_dedup.py "$@"
+python gmail_oauth_extractor.py "$@"
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Gmail extraction failed!${NC}"

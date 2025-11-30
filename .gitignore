@@ -62,6 +62,11 @@ credentials.json
 token.json
 client_secret*.json
 
+# OAuth configuration (local user setup)
+.email-pipeline/
+oauth_config.json
+oauth_token.json
+
 # API Keys and pricing
 model_pricing.json
 gemini_costs_tracking.json
