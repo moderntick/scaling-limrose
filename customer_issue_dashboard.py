@@ -14,7 +14,7 @@ app = Flask(__name__)
 
 # Database configuration
 DB_CONFIG = {
-    'dbname': os.getenv('DB_NAME', 'email_pipeline'),
+    'dbname': os.getenv('DB_NAME', 'limrose_email_pipeline'),
     'user': os.getenv('DB_USER', 'postgres'),
     'host': os.getenv('DB_HOST', 'localhost')
 }

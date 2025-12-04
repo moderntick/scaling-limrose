@@ -68,7 +68,7 @@ class EmailPipelineRouter:
         else:
             self.model = SentenceTransformer(EMBEDDING_MODEL_NAME)
         self.db_conn = psycopg2.connect(
-            dbname=os.getenv('DB_NAME', 'email_pipeline'),
+            dbname=os.getenv('DB_NAME', 'limrose_email_pipeline'),
             user=os.getenv('DB_USER', 'postgres'),
             host=os.getenv('DB_HOST', 'localhost')
         )

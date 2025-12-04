@@ -21,15 +21,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-DB_NAME = os.getenv("DB_NAME", "email_pipeline")
+DB_NAME = os.getenv("DB_NAME", "limrose_email_pipeline")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 
 # LLM Configuration
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "GEMINI")
 LLM_API_KEY = os.getenv("LLM_API_KEY")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.0-flash-lite")  # Configurable model
+
 if LLM_PROVIDER == "GEMINI":
-    LLM_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={LLM_API_KEY}"
+    LLM_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{LLM_MODEL}:generateContent?key={LLM_API_KEY}"
 
 @dataclass
 class CustomerIssue:

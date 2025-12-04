@@ -99,7 +99,7 @@ if [[ "$1" == "--setup" ]]; then
     
     # Create database
     echo -e "\n${YELLOW}Setting up PostgreSQL database...${NC}"
-    DB_NAME=${DB_NAME:-email_pipeline}
+    DB_NAME=${DB_NAME:-limrose_email_pipeline}
     DB_USER=${DB_USER:-postgres}
     
     # Check if database exists
@@ -206,9 +206,9 @@ check_environment() {
 
 # Ensure services are running
 check_services() {
-    # Check PostgreSQL
-    PSQL=$(which psql 2>/dev/null || echo "/usr/local/Cellar/postgresql@17/17.5/bin/psql")
-    DB_NAME=${DB_NAME:-email_pipeline}
+    # Check PostgreSQL (use version-independent path)
+    PSQL=$(which psql 2>/dev/null || echo "/usr/local/opt/postgresql@17/bin/psql")
+    DB_NAME=${DB_NAME:-limrose_email_pipeline}
     if ! $PSQL -d $DB_NAME -c "SELECT 1" > /dev/null 2>&1; then
         echo -e "${RED}Error: PostgreSQL is not running or database '$DB_NAME' not accessible${NC}"
         echo "Please ensure PostgreSQL is running and database exists"
@@ -275,7 +275,7 @@ CUSTOMER_ISSUES=$(python -c "
 import psycopg2
 import os
 conn = psycopg2.connect(
-    dbname=os.getenv('DB_NAME', 'email_pipeline'),
+    dbname=os.getenv('DB_NAME', 'limrose_email_pipeline'),
     user=os.getenv('DB_USER', 'postgres'),
     host=os.getenv('DB_HOST', 'localhost')
 )
@@ -323,7 +323,7 @@ try:
     
     # Connect to database
     conn = psycopg2.connect(
-        dbname=os.getenv('DB_NAME', 'email_pipeline'),
+        dbname=os.getenv('DB_NAME', 'limrose_email_pipeline'),
         user=os.getenv('DB_USER', 'postgres'),
         host=os.getenv('DB_HOST', 'localhost')
     )

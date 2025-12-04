@@ -49,7 +49,7 @@ class GmailServiceAccountExtractor:
         # self.model = SentenceTransformer(EMBEDDING_MODEL_NAME)  # REMOVED: Model loading moved to batch_process_all_emails.py
         self.service = self.authenticate_service_account()
         self.db_conn = psycopg2.connect(
-            dbname=os.getenv('DB_NAME', 'email_pipeline'),
+            dbname=os.getenv('DB_NAME', 'limrose_email_pipeline'),
             user=os.getenv('DB_USER', 'postgres'),
             host=os.getenv('DB_HOST', 'localhost')
         )

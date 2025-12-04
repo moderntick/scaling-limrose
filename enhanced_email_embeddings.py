@@ -25,14 +25,9 @@ from email_pipeline_router import DateTimeJSONEncoder
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Service account configuration
-SERVICE_ACCOUNT_FILE = os.getenv('SERVICE_ACCOUNT_FILE', 'config/service-account-key.json')
-DELEGATE_EMAIL = os.getenv('DELEGATE_EMAIL', '')
-SCOPES = [
-    'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/gmail.modify',
-    'https://www.googleapis.com/auth/gmail.send'
-]
+# Note: Service account authentication removed in favor of OAuth2
+# Gmail API access is optional and only needed for thread context features
+# Thread context is disabled by default for performance
 
 EMBEDDING_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 
@@ -53,14 +48,13 @@ class EnhancedEmailEmbeddings:
         else:
             self.model = SentenceTransformer(EMBEDDING_MODEL_NAME)
         logger.info("[INIT] Model loaded successfully")
-        
-        logger.info("[INIT] Authenticating service account...")
-        self.service = self.authenticate_service_account()
-        logger.info("[INIT] Service account authenticated")
-        
+
+        # Gmail service not needed - thread context disabled by default
+        self.service = None
+
         logger.info("[INIT] Connecting to PostgreSQL database...")
         self.db_conn = psycopg2.connect(
-            dbname=os.getenv('DB_NAME', 'email_pipeline'),
+            dbname=os.getenv('DB_NAME', 'limrose_email_pipeline'),
             user=os.getenv('DB_USER', 'postgres'),
             host=os.getenv('DB_HOST', 'localhost')
         )
@@ -72,16 +66,8 @@ class EnhancedEmailEmbeddings:
         
         # PERFORMANCE: Default to skip expensive operations for bulk processing
         self.skip_article_search = True
-        self.skip_thread_context = True
+        self.skip_thread_context = True  # Gmail API not available without service account
         logger.info("[INIT] Performance mode enabled: article search and thread context disabled by default")
-    
-    def authenticate_service_account(self):
-        """Authenticate using service account"""
-        credentials = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES
-        )
-        delegated_credentials = credentials.with_subject(DELEGATE_EMAIL)
-        return build('gmail', 'v1', credentials=delegated_credentials)
     
     def setup_enhanced_database(self):
         """Set up enhanced database schema for rich embeddings"""

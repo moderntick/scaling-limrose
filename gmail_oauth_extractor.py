@@ -36,7 +36,7 @@ class GmailOAuthExtractor:
         self.db_config = {
             'host': os.getenv('DB_HOST', 'localhost'),
             'port': os.getenv('DB_PORT', '5432'),
-            'database': os.getenv('DB_NAME', 'email_pipeline'),
+            'database': os.getenv('DB_NAME', 'limrose_email_pipeline'),
             'user': os.getenv('DB_USER', 'postgres'),
             'password': os.getenv('DB_PASSWORD', '')
         }
@@ -67,24 +67,24 @@ class GmailOAuthExtractor:
         try:
             with self.get_db_connection() as conn:
                 with conn.cursor() as cursor:
-                    # Check if raw_emails table exists
+                    # Check if classified_emails table exists
                     cursor.execute("""
                         SELECT EXISTS (
-                            SELECT FROM information_schema.tables 
-                            WHERE table_schema = 'public' 
-                            AND table_name = 'raw_emails'
+                            SELECT FROM information_schema.tables
+                            WHERE table_schema = 'public'
+                            AND table_name = 'classified_emails'
                         );
                     """)
-                    
+
                     table_exists = cursor.fetchone()[0]
-                    
+
                     if not table_exists:
-                        print("❌ Database table 'raw_emails' not found")
+                        print("❌ Database table 'classified_emails' not found")
                         print("💡 Please create the database schema first:")
-                        print("   - Check the project documentation for setup instructions")
-                        print("   - Run the database migration scripts if available")
+                        print("   - Run: ./update_emails_v2.sh --setup")
+                        print("   - Or run: python scripts/setup_all_tables.py")
                         return False
-                    
+
                     print("✓ Database schema validation passed")
                     return True
                     
@@ -279,42 +279,49 @@ class GmailOAuthExtractor:
                         try:
                             # Check if email already exists
                             cursor.execute(
-                                "SELECT id FROM raw_emails WHERE gmail_id = %s",
+                                "SELECT id FROM classified_emails WHERE gmail_id = %s",
                                 (email['gmail_id'],)
                             )
-                            
+
                             if cursor.fetchone():
                                 logger.info(f"Email {email['gmail_id']} already exists, skipping...")
                                 continue
-                            
-                            # Insert email
+
+                            # Parse CC emails into array
+                            cc_emails = []
+                            if email.get('cc'):
+                                # Split by comma and extract email addresses
+                                cc_parts = email['cc'].split(',')
+                                for cc_part in cc_parts:
+                                    cc_email = self.extract_email_address(cc_part.strip())
+                                    if cc_email:
+                                        cc_emails.append(cc_email)
+
+                            # Insert email into classified_emails table
                             cursor.execute("""
-                                INSERT INTO raw_emails (
+                                INSERT INTO classified_emails (
                                     gmail_id, thread_id, message_id, in_reply_to,
-                                    subject, sender, sender_email, sender_normalized,
-                                    recipient, recipient_email, recipient_normalized,
-                                    cc, received_date, body, labels, is_sent, raw_data
+                                    subject, sender_name, sender_email,
+                                    recipient_emails, cc_emails,
+                                    date_sent, body_text, labels, processed
                                 ) VALUES (
-                                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                                 )
+                                ON CONFLICT (gmail_id) DO NOTHING
                             """, (
                                 email['gmail_id'],
                                 email['thread_id'],
                                 email['message_id'],
-                                email['in_reply_to'],
+                                email.get('in_reply_to'),
                                 email['subject'],
-                                email['sender'],
-                                email['sender_email'],
-                                email['sender_normalized'],
-                                email['recipient'],
-                                email['recipient_email'],
-                                email['recipient_normalized'],
-                                email['cc'],
+                                email['sender'],  # Full "Name <email>" format
+                                email['sender_email'],  # Just email address
+                                [email['recipient_email']] if email.get('recipient_email') else [],  # Array
+                                cc_emails,  # Array of CC emails
                                 email['received_date'],
                                 email['body'],
                                 email['labels'],
-                                email['is_sent'],
-                                json.dumps(email['raw_data'])
+                                False  # Initially not processed
                             ))
                             
                             saved_count += 1

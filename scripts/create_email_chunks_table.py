@@ -6,7 +6,7 @@ import psycopg
 from pgvector.psycopg import register_vector
 
 # Configuration from environment or defaults
-DB_NAME = os.getenv("DB_NAME", "email_pipeline")
+DB_NAME = os.getenv("DB_NAME", "limrose_email_pipeline")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 POSTGRES_DSN = f"dbname={DB_NAME} user={DB_USER} host={DB_HOST} connect_timeout=30"

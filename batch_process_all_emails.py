@@ -14,7 +14,7 @@ import traceback
 from datetime import datetime
 
 # Configuration
-DB_NAME = os.getenv("DB_NAME", "email_pipeline")
+DB_NAME = os.getenv("DB_NAME", "limrose_email_pipeline")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 BATCH_SIZE = 200
